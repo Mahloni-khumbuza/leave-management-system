@@ -1,0 +1,21 @@
+# IDE / editor
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local bootstrap / runtime
+.env
+.env.local
+*.log
+
+# Build artifacts (also covered by per-project .gitignore)
+target/
+node_modules/
+dist/
+/.angular/
