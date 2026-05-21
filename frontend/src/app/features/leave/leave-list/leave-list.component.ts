@@ -8,7 +8,12 @@ import { AuthService } from '../../../core/services/auth.service';
   template: `
     <div class="container">
       <div class="card">
-        <h2>{{ adminMode ? 'All leave requests' : 'My leave history' }}</h2>
+        <header class="section-header">
+          <h2 class="section-title">{{ adminMode ? 'All leave requests' : 'My leave history' }}</h2>
+          <p class="section-sub">
+            {{ adminMode ? 'Every submission across the organisation.' : 'Every request you have submitted.' }}
+          </p>
+        </header>
 
         <div class="loading" *ngIf="loading">Loading…</div>
         <div class="error" *ngIf="error">{{ error }}</div>
@@ -33,8 +38,16 @@ import { AuthService } from '../../../core/services/auth.service';
               <td>{{ l.reason }}</td>
               <td><span [class]="'status-' + l.status">{{ l.status }}</span></td>
               <td>
-                <a *ngIf="l.documentUrl" [href]="l.documentUrl" target="_blank" rel="noopener">View</a>
-                <span *ngIf="!l.documentUrl">—</span>
+                <ng-container *ngIf="docLinks(l.documentUrl) as urls; else noDocs">
+                  <a
+                    *ngFor="let url of urls; let i = index"
+                    [href]="url"
+                    target="_blank"
+                    rel="noopener"
+                    class="doc-link"
+                  >Doc {{ i + 1 }}</a>
+                </ng-container>
+                <ng-template #noDocs>—</ng-template>
               </td>
               <td *ngIf="adminMode">
                 <ng-container *ngIf="l.status === 'PENDING'; else decided">
@@ -83,9 +96,19 @@ export class LeaveListComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        this.error = err?.error?.message ?? 'Failed to load leaves';
+        if (err?.status === 401) {
+          this.error = 'Your session expired or the backend rejected your token. Please sign out and sign in again.';
+          return;
+        }
+        this.error = err?.error?.message ?? `Failed to load leaves (status ${err?.status ?? 'unknown'})`;
       },
     });
+  }
+
+  docLinks(documentUrl: string | null): string[] | null {
+    if (!documentUrl) return null;
+    const urls = documentUrl.split('\n').map((u) => u.trim()).filter((u) => u.length > 0);
+    return urls.length > 0 ? urls : null;
   }
 
   decide(leave: LeaveResponse, status: 'APPROVED' | 'REJECTED'): void {
